@@ -14,7 +14,8 @@ db.sqlite3
 db.sqlite3-journal
 /media
 /staticfiles
-/static
+/static/CACHE
+/static/CACHE.*
 
 # Environment
 .env
@@ -34,3 +35,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Debug
+debug_page.html
