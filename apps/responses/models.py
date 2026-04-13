@@ -1,11 +1,13 @@
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from apps.projects.models import Project
 
 
 class Response(models.Model):
-    """Отклик на заказ"""
-    STATUS_CHOICES = [
+    """Отклик на заказ."""
+
+    STATUS_CHOICES: list[tuple] = [
         ('sent', 'Отправлен'),
         ('accepted', 'Принят'),
         ('rejected', 'Отклонен'),
@@ -35,5 +37,13 @@ class Response(models.Model):
         verbose_name_plural = "Отклики"
         ordering = ['-sent_at']
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Отклик на {self.project.title}"
+
+    def clean(self) -> None:
+        """Валидация данных модели."""
+        super().clean()
+        if self.status in ('accepted', 'rejected') and not self.result:
+            raise ValidationError(
+                {'result': 'Поле результат обязательно при статусе принят/отклонен'}
+            )

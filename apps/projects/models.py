@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.db import models
 from django.utils import timezone
 
@@ -24,13 +26,13 @@ class Category(models.Model):
         verbose_name_plural = "Категории"
         ordering = ['name']
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
 class Project(models.Model):
     """Заказ с Kwork"""
-    STATUS_CHOICES = [
+    STATUS_CHOICES: list[tuple] = [
         ('new', 'Новый'),
         ('viewed', 'Просмотрен'),
         ('responded', 'Отклик отправлен'),
@@ -86,5 +88,5 @@ class Project(models.Model):
             models.Index(fields=['-parsed_at']),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title

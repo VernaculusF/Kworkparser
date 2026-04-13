@@ -1,17 +1,21 @@
 import time
 import random
 import logging
+import os
 from decimal import Decimal
-from datetime import datetime
+from typing import Optional, Any
 
+from django.conf import settings
+from django.utils import timezone
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from apps.projects.models import Category, Project
 
@@ -19,31 +23,34 @@ logger = logging.getLogger('parser')
 
 
 class KworkParser:
-    """Парсер заказов с Kwork.ru с использованием Selenium"""
-    
-    BASE_URL = 'https://kwork.ru'
-    
-    def __init__(self, delay=2, timeout=10, max_pages=5):
+    """Парсер заказов с Kwork.ru с использованием Selenium."""
+
+    BASE_URL: str = 'https://kwork.ru'
+    DEBUG_PAGE_PATH: str = 'debug_page.html'
+
+    def __init__(self, delay: int = 2, timeout: int = 10, max_pages: int = 5) -> None:
         self.delay = delay
         self.timeout = timeout
         self.max_pages = max_pages
-        self.driver = None
+        self.driver: Optional[WebDriver] = None
         
-    def _init_driver(self):
-        """Инициализация Selenium WebDriver"""
+    def _init_driver(self) -> None:
+        """Инициализация Selenium WebDriver."""
         if self.driver:
             return
-            
+
         chrome_options = Options()
-        chrome_options.add_argument('--headless')  # Без GUI
+        chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
+        chrome_options.add_argument(
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+            'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
+
         try:
-            # Автоматическая установка ChromeDriver
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.set_page_load_timeout(self.timeout)
@@ -51,26 +58,26 @@ class KworkParser:
         except Exception as e:
             logger.error(f'Failed to initialize Chrome driver: {e}')
             raise
-    
-    def _close_driver(self):
-        """Закрытие WebDriver"""
+
+    def _close_driver(self) -> None:
+        """Закрытие WebDriver."""
         if self.driver:
             try:
                 self.driver.quit()
-            except:
+            except Exception:
                 pass
             self.driver = None
-    
-    def parse_category(self, category_id, max_pages=None):
+
+    def parse_category(self, category_id: int, max_pages: Optional[int] = None) -> int:
         """
-        Парсинг категории
-        
+        Парсинг категории.
+
         Args:
-            category_id: ID категории в Kwork
-            max_pages: Максимум страниц для парсинга
-            
+            category_id: ID категории в Kwork.
+            max_pages: Максимум страниц для парсинга.
+
         Returns:
-            Количество новых заказов
+            Количество новых заказов.
         """
         if max_pages is None:
             max_pages = self.max_pages
@@ -118,9 +125,10 @@ class KworkParser:
                     
                     # Сохраняем HTML для отладки (первая страница)
                     if page == 1:
-                        with open('debug_page.html', 'w', encoding='utf-8') as f:
+                        debug_path = os.path.join(settings.BASE_DIR, self.DEBUG_PAGE_PATH)
+                        with open(debug_path, 'w', encoding='utf-8') as f:
                             f.write(html)
-                        logger.info('Saved page HTML to debug_page.html')
+                        logger.debug('Saved page HTML to debug_page.html')
                     
                     soup = BeautifulSoup(html, 'lxml')
                     
@@ -166,11 +174,8 @@ class KworkParser:
         logger.info(f'Parsing completed. Total new projects: {new_projects_count}')
         return new_projects_count
     
-    def extract_projects(self, soup, category):
-        """
-        Извлечение проектов со страницы
-        Структура: <div class="want-card want-card--list want-card--hover">
-        """
+    def extract_projects(self, soup: BeautifulSoup, category: Category) -> list[dict]:
+        """Извлечение проектов со страницы."""
         projects = []
         
         # Реальный селектор из HTML Kwork
@@ -194,22 +199,8 @@ class KworkParser:
         logger.info(f'Total extracted projects: {len(projects)}')
         return projects
     
-    def extract_project_data(self, item, category):
-        """
-        Извлечение данных одного проекта
-        
-        Структура HTML Kwork:
-        <div class="want-card">
-            <h1 class="wants-card__header-title">
-                <a href="/projects/3149022">Заголовок</a>
-            </h1>
-            <div class="wants-card__description-text">
-                <div class="overflow-hidden">Краткое...</div>
-                <div class="overflow-hidden" style="display: none;">Полное описание</div>
-            </div>
-            <div class="wants-card__price">500 ₽</div>
-        </div>
-        """
+    def extract_project_data(self, item: Tag, category: Category) -> Optional[dict]:
+        """Извлечение данных одного проекта."""
         
         # Извлечение ID проекта из ссылки
         kwork_id = None
@@ -295,8 +286,8 @@ class KworkParser:
             'is_viewed': False,
         }
     
-    def safe_extract(self, item, selector, attr='text'):
-        """Безопасное извлечение данных"""
+    def safe_extract(self, item: Tag, selector: str, attr: str = 'text') -> str:
+        """Безопасное извлечение данных."""
         try:
             element = item.select_one(selector)
             if element:
@@ -308,8 +299,8 @@ class KworkParser:
             pass
         return ''
     
-    def parse_price(self, price_text):
-        """Парсинг цены из текста"""
+    def parse_price(self, price_text: str) -> Optional[Decimal]:
+        """Парсинг цены из текста."""
         if not price_text:
             return None
         
@@ -323,12 +314,12 @@ class KworkParser:
         
         return None
     
-    def save_project(self, project_data):
+    def save_project(self, project_data: dict) -> bool:
         """
-        Сохранение или обновление проекта в БД
-        
+        Сохранение или обновление проекта в БД.
+
         Returns:
-            True если проект новый, False если уже существует (но обновляется)
+            True если проект новый, False если уже существует.
         """
         kwork_id = project_data['kwork_id']
         
@@ -336,12 +327,12 @@ class KworkParser:
         existing = Project.objects.filter(kwork_id=kwork_id).first()
         
         if existing:
-            # Обновляем существующий проект (цена, описание могли измениться)
             existing.title = project_data['title']
             existing.description = project_data['description']
             existing.price = project_data['price']
             existing.author_name = project_data['author_name']
             existing.url = project_data['url']
+            existing.parsed_at = timezone.now()
             existing.save()
             logger.debug(f'Updated existing project: {kwork_id}')
             return False

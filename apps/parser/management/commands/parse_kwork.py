@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.core.management.base import BaseCommand
 from django.conf import settings
 
@@ -6,9 +8,11 @@ from apps.projects.models import Category
 
 
 class Command(BaseCommand):
+    """Management команда для парсинга заказов с Kwork.ru."""
+
     help = 'Парсинг заказов с Kwork.ru'
 
-    def add_arguments(self, parser):
+    def add_arguments(self, parser) -> None:
         parser.add_argument(
             '--category',
             type=int,
@@ -26,7 +30,7 @@ class Command(BaseCommand):
             help='Максимум страниц для парсинга (по умолчанию из настроек)'
         )
 
-    def handle(self, *args, **options):
+    def handle(self, *args: Any, **options: Any) -> None:
         category_id = options.get('category')
         parse_all = options.get('all')
         max_pages = options.get('pages') or settings.PARSER_MAX_PAGES
