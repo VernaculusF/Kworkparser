@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои отклики - Kwork Parser{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1>Мои отклики</h1>
+        <p class="text-muted">Заказы, на которые вы откликнулись</p>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Категория</label>
+                <select name="category" class="form-select">
+                    <option value="">Все</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Поиск</label>
+                <input type="text" name="search" class="form-control" placeholder="Поиск по заголовку..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Фильтровать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-3">
+    <div class="col-md-12">
+        <p class="text-muted">Найдено откликов: <strong>{{ page_obj.paginator.count }}</strong></p>
+    </div>
+</div>
+
+<!-- Список заказов -->
+<div id="projectsList">
+{% if page_obj %}
+    <div class="row">
+        {% for project in page_obj %}
+        <div class="col-md-12 mb-3">
+            <div class="card project-card" data-project-id="{{ project.id }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">
+                                <a href="{{ project.url }}" target="_blank" class="text-decoration-none">
+                                    {{ project.title }}
+                                </a>
+                            </h5>
+                            <p class="card-text text-muted small">{{ project.description|truncatewords:30 }}</p>
+                            <div class="d-flex gap-2 flex-wrap align-items-center">
+                                <span class="badge bg-secondary">{{ project.category.name }}</span>
+                                <span class="badge bg-warning status-badge">Отклик отправлен</span>
+                                {% if project.price %}
+                                    <span class="badge bg-primary">{{ project.price }} {{ project.currency }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end ms-3">
+                            <small class="text-muted d-block">{{ project.parsed_at|date:"d.m.Y H:i" }}</small>
+                            {% if project.author_name %}
+                                <small class="text-muted d-block">{{ project.author_name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                У вас пока нет откликов. Перейдите на страницу "Все заказы" и нажмите кнопку "Откликнулся" на интересующих заказах.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Назад</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_category %}&category={{ current_category }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Вперед</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+{% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.title }} - Kwork Parser{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-3">
+        <a href="{% url 'projects:project_list' %}" class="btn btn-outline-secondary btn-sm">&larr; Назад к списку</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">{{ project.title }}</h2>
+                
+                <div class="mb-3">
+                    {% if project.status == 'new' %}
+                        <span class="badge bg-success">Новый</span>
+                    {% elif project.status == 'viewed' %}
+                        <span class="badge bg-info">Просмотрен</span>
+                    {% elif project.status == 'responded' %}
+                        <span class="badge bg-warning">Отклик отправлен</span>
+                    {% elif project.status == 'archived' %}
+                        <span class="badge bg-dark">Архив</span>
+                    {% endif %}
+                    <span class="badge bg-secondary">{{ project.category.name }}</span>
+                </div>
+
+                <div class="mb-4">
+                    <h5>Описание</h5>
+                    <p class="text-break">{{ project.description|linebreaks }}</p>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Цена:</strong> 
+                        {% if project.price %}
+                            {{ project.price }} {{ project.currency }}
+                        {% else %}
+                            Не указана
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Срок:</strong> {{ project.deadline|default:"Не указан" }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Заказчик:</strong> {{ project.author_name|default:"Не указан" }}
+                    </div>
+                    {% if project.author_rating %}
+                    <div class="col-md-6">
+                        <strong>Рейтинг:</strong> {{ project.author_rating }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <strong>Дата публикации:</strong> 
+                    {% if project.published_at %}
+                        {{ project.published_at|date:"d.m.Y H:i" }}
+                    {% else %}
+                        {{ project.parsed_at|date:"d.m.Y H:i" }}
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <a href="{{ project.url }}" target="_blank" class="btn btn-primary">
+                        Открыть на Kwork &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Действия</strong>
+            </div>
+            <div class="card-body">
+                {% if project.status != 'responded' %}
+                <form method="post" action="{% url 'projects:mark_responded' project.pk %}" class="mb-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning w-100">Отметить отклик</button>
+                </form>
+                {% endif %}
+
+                {% if project.status != 'archived' %}
+                <form method="post" action="{% url 'projects:mark_archived' project.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary w-100">В архив</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <strong>Информация</strong>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2">
+                    <strong>ID на Kwork:</strong> {{ project.kwork_id }}
+                </p>
+                <p class="small mb-2">
+                    <strong>Спарсен:</strong> {{ project.parsed_at|date:"d.m.Y H:i" }}
+                </p>
+                <p class="small mb-0">
+                    <strong>Обновлен:</strong> {{ project.updated_at|date:"d.m.Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
