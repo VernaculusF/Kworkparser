@@ -39,7 +39,14 @@ def _get_filtered_projects(
         queryset = queryset.filter(status=status_filter)
 
     if category_id:
-        queryset = queryset.filter(category_id=category_id)
+        # Включаем основную категорию и все подкатегории
+        try:
+            cat = Category.objects.get(pk=int(category_id))
+            subcategory_ids = list(cat.subcategories.values_list('id', flat=True))
+            all_ids = [cat.id] + subcategory_ids
+            queryset = queryset.filter(category_id__in=all_ids)
+        except (Category.DoesNotExist, ValueError):
+            queryset = queryset.filter(category_id=category_id)
 
     if search:
         queryset = queryset.filter(
@@ -192,7 +199,8 @@ def run_parser(category_id: str) -> None:
     """Функция парсинга в фоновом потоке."""
     try:
         if category_id == 'all':
-            categories = Category.objects.filter(is_active=True)
+            # Парсим все подкатегории (основные — только как контейнеры)
+            categories = Category.objects.filter(parent__isnull=False, is_active=True)
             parser = KworkParser(
                 delay=settings.PARSER_DELAY,
                 timeout=settings.PARSER_TIMEOUT,
@@ -200,27 +208,46 @@ def run_parser(category_id: str) -> None:
             )
 
             for category in categories:
-                parse_queue.put({'type': 'category_start', 'category': category.name})
+                parent_name = f"{category.parent.name} → " if category.parent else ""
+                parse_queue.put({'type': 'category_start', 'category': f'{parent_name}{category.name}'})
                 new_count = parse_single_category(parser, category)
                 parse_status['total'] += new_count
                 parse_queue.put({
                     'type': 'category_done',
-                    'category': category.name,
+                    'category': f'{parent_name}{category.name}',
                     'count': new_count,
                 })
 
         elif category_id:
             try:
                 category = Category.objects.get(kwork_id=int(category_id))
-                parser = KworkParser(
-                    delay=settings.PARSER_DELAY,
-                    timeout=settings.PARSER_TIMEOUT,
-                    max_pages=MAX_PARSE_PAGES,
-                )
 
-                parse_queue.put({'type': 'category_start', 'category': category.name})
-                new_count = parse_single_category(parser, category)
-                parse_status['total'] = new_count
+                # Если основная категория — парсим все подкатегории
+                if category.parent is None:
+                    subcategories = list(category.subcategories.filter(is_active=True))
+                    if subcategories:
+                        parse_queue.put({'type': 'category_start', 'category': f'{category.name} (все подкатегории)'})
+                        parser = KworkParser(
+                            delay=settings.PARSER_DELAY,
+                            timeout=settings.PARSER_TIMEOUT,
+                            max_pages=MAX_PARSE_PAGES,
+                        )
+
+                        for subcat in subcategories:
+                            parse_queue.put({'type': 'info', 'message': f'Парсинг: {subcat.name}'})
+                            new_count = parse_single_category(parser, subcat)
+                            parse_status['total'] += new_count
+                            parse_queue.put({
+                                'type': 'category_done',
+                                'category': subcat.name,
+                                'count': new_count,
+                            })
+                    else:
+                        # Нет подкатегорий — парсим саму основную
+                        _parse_single(parser_category=category, category_id=category_id)
+                else:
+                    # Подкатегория — парсим только её
+                    _parse_single(parser_category=category, category_id=category_id)
 
             except Category.DoesNotExist:
                 parse_queue.put({'type': 'error', 'message': 'Категория не найдена'})
@@ -232,6 +259,19 @@ def run_parser(category_id: str) -> None:
 
     finally:
         parse_status['running'] = False
+
+
+def _parse_single(parser_category: 'Category', category_id: str) -> None:
+    """Парсинг одной категории."""
+    parser = KworkParser(
+        delay=settings.PARSER_DELAY,
+        timeout=settings.PARSER_TIMEOUT,
+        max_pages=MAX_PARSE_PAGES,
+    )
+
+    parse_queue.put({'type': 'category_start', 'category': parser_category.name})
+    new_count = parse_single_category(parser, parser_category)
+    parse_status['total'] = new_count
 
 
 def parse_single_category(parser: KworkParser, category: Category) -> int:

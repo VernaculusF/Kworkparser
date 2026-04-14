@@ -18,10 +18,11 @@
                 <option value="all">🌐 Все категории</option>
                 {% for category in categories %}
                     {% if not category.parent %}
-                        <optgroup label="── {{ category.name }} ──">
-                        {% for subcat in category.subcategories.all %}
-                            <option value="{{ subcat.kwork_id }}">  {{ subcat.name }}</option>
-                        {% endfor %}
+                        <optgroup label="{{ category.name }}">
+                            <option value="{{ category.kwork_id }}">Все подкатегории</option>
+                            {% for subcat in category.subcategories.all %}
+                            <option value="{{ subcat.kwork_id }}">{{ subcat.name }}</option>
+                            {% endfor %}
                         </optgroup>
                     {% endif %}
                 {% endfor %}
