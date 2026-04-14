@@ -4,6 +4,9 @@
 {% block title %}Заказы - Kwork Parser{% endblock %}
 
 {% block content %}
+<!-- CSRF token для AJAX запросов -->
+{% csrf_token %}
+
 <div class="row mb-4">
     <div class="col-md-8">
         <h1>Заказы с Kwork</h1>

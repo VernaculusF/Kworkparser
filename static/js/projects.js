@@ -27,9 +27,13 @@ function markAsResponded(projectId, btn) {
 
     fetch(`/projects/${projectId}/respond/`, {
         method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
         body: formData,
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 const card = document.querySelector(`[data-project-id="${projectId}"]`);
@@ -53,7 +57,17 @@ function markAsResponded(projectId, btn) {
 }
 
 function getCSRFToken() {
-    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    // Из скрытого input
+    const input = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (input) return input.value;
+
+    // Из cookie csrftoken
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+
+    return cookieValue || '';
 }
 
 function showNotification(message, type) {
@@ -109,9 +123,13 @@ function handleStartParse() {
 
     fetch(parseStartUrl, {
         method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
         body: formData,
     })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return response.json();
+        })
         .then(data => {
             if (data.status === 'started') {
                 pollInterval = setInterval(checkStatus, 1000);
@@ -128,7 +146,10 @@ function checkStatus() {
     const parseStatusUrl = document.getElementById('parse-status-url')?.dataset.url || '/projects/parse-status/';
 
     fetch(parseStatusUrl)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            return response.json();
+        })
         .then(data => {
             if (data.events && data.events.length > 0) {
                 data.events.forEach(event => handleParseEvent(event));
