@@ -13,14 +13,18 @@
     </div>
     <div class="col-md-4 text-end">
         <div class="d-flex gap-2 justify-content-end align-items-center">
-            <select id="category_select" class="form-select" style="max-width: 250px;">
+            <select id="category_select" class="form-select" style="max-width: 280px;">
                 <option value="">Выберите категорию</option>
-                <option value="all">Все активные категории</option>
-                <optgroup label="Категории Kwork">
-                    {% for category in categories %}
-                    <option value="{{ category.kwork_id }}">{{ category.name }}</option>
-                    {% endfor %}
-                </optgroup>
+                <option value="all">🌐 Все категории</option>
+                {% for category in categories %}
+                    {% if not category.parent %}
+                        <optgroup label="── {{ category.name }} ──">
+                        {% for subcat in category.subcategories.all %}
+                            <option value="{{ subcat.kwork_id }}">  {{ subcat.name }}</option>
+                        {% endfor %}
+                        </optgroup>
+                    {% endif %}
+                {% endfor %}
             </select>
             <button type="button" class="btn btn-success" id="startParseBtn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
@@ -81,9 +85,16 @@
                 <select name="category" class="form-select">
                     <option value="">Все</option>
                     {% for category in categories %}
-                    <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
+                        {% if not category.parent %}
+                            <option value="{{ category.id }}" {% if current_category == category.id|stringformat:"s" %}selected{% endif %} style="font-weight: bold;">
+                                {{ category.name }}
+                            </option>
+                            {% for subcat in category.subcategories.all %}
+                            <option value="{{ subcat.id }}" {% if current_category == subcat.id|stringformat:"s" %}selected{% endif %}>
+                                &nbsp;&nbsp;{{ subcat.name }}
+                            </option>
+                            {% endfor %}
+                        {% endif %}
                     {% endfor %}
                 </select>
             </div>

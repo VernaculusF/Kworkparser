@@ -58,7 +58,7 @@ def _get_paginated_projects(request: HttpRequest, queryset: QuerySet[Project]) -
 
 def _get_active_categories() -> QuerySet[Category]:
     """Получение активных категорий для фильтров."""
-    return Category.objects.filter(is_active=True)
+    return Category.objects.filter(is_active=True).prefetch_related('subcategories')
 
 
 def _build_filter_context(

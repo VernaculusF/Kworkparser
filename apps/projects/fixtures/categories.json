@@ -1,132 +1,70 @@
+# Категории Kwork с актуальной структурой
+# Формат: name, kwork_id, parent_id (null для основных)
+
 [
-  {
-    "model": "projects.category",
-    "pk": 1,
-    "fields": {
-      "name": "Разработка и IT",
-      "kwork_id": 11,
-      "parent": null,
-      "url": "https://kwork.ru/projects?c=11",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 2,
-    "fields": {
-      "name": "Верстка",
-      "kwork_id": 79,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=79",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 3,
-    "fields": {
-      "name": "Десктоп программирование",
-      "kwork_id": 80,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=80",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 4,
-    "fields": {
-      "name": "Доработка и настройка сайта",
-      "kwork_id": 38,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=38",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 5,
-    "fields": {
-      "name": "Игры",
-      "kwork_id": 40,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=40",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 6,
-    "fields": {
-      "name": "Мобильные приложения",
-      "kwork_id": 39,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=39",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 7,
-    "fields": {
-      "name": "Сервера и хостинг",
-      "kwork_id": 255,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=255",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 8,
-    "fields": {
-      "name": "Скрипты, боты и mini apps",
-      "kwork_id": 41,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=41",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 9,
-    "fields": {
-      "name": "Создание сайта",
-      "kwork_id": 37,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=37",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  },
-  {
-    "model": "projects.category",
-    "pk": 10,
-    "fields": {
-      "name": "Юзабилити, тесты и помощь",
-      "kwork_id": 81,
-      "parent": 1,
-      "url": "https://kwork.ru/projects?c=81",
-      "is_active": true,
-      "created_at": "2026-04-13T16:00:00Z",
-      "updated_at": "2026-04-13T16:00:00Z"
-    }
-  }
+  {"name": "Дизайн", "kwork_id": 15, "parent_id": null, "is_active": true},
+  {"name": "Арт и иллюстрации", "kwork_id": 28, "parent_id": 15, "is_active": true},
+  {"name": "Веб и мобильный дизайн", "kwork_id": 24, "parent_id": 15, "is_active": true},
+  {"name": "ИИ-генерация изображений", "kwork_id": 306, "parent_id": 15, "is_active": true},
+  {"name": "Интерьер и экстерьер", "kwork_id": 90, "parent_id": 15, "is_active": true},
+  {"name": "Логотип и брендинг", "kwork_id": 25, "parent_id": 15, "is_active": true},
+  {"name": "Маркетплейсы и соцсети", "kwork_id": 286, "parent_id": 15, "is_active": true},
+  {"name": "Наружная реклама", "kwork_id": 272, "parent_id": 15, "is_active": true},
+  {"name": "Обработка и редактирование", "kwork_id": 68, "parent_id": 15, "is_active": true},
+  {"name": "Полиграфия", "kwork_id": 27, "parent_id": 15, "is_active": true},
+  {"name": "Презентации и инфографика", "kwork_id": 270, "parent_id": 15, "is_active": true},
+  {"name": "Промышленный дизайн", "kwork_id": 250, "parent_id": 15, "is_active": true},
+
+  {"name": "Разработка и IT", "kwork_id": 11, "parent_id": null, "is_active": true},
+  {"name": "Верстка", "kwork_id": 79, "parent_id": 11, "is_active": true},
+  {"name": "Десктоп программирование", "kwork_id": 80, "parent_id": 11, "is_active": true},
+  {"name": "Доработка и настройка сайта", "kwork_id": 38, "parent_id": 11, "is_active": true},
+  {"name": "Игры", "kwork_id": 40, "parent_id": 11, "is_active": true},
+  {"name": "Мобильные приложения", "kwork_id": 39, "parent_id": 11, "is_active": true},
+  {"name": "Сервера и хостинг", "kwork_id": 255, "parent_id": 11, "is_active": true},
+  {"name": "Скрипты, боты и mini apps", "kwork_id": 41, "parent_id": 11, "is_active": true},
+  {"name": "Создание сайта", "kwork_id": 37, "parent_id": 11, "is_active": true},
+  {"name": "Юзабилити, тесты и помощь", "kwork_id": 81, "parent_id": 11, "is_active": true},
+
+  {"name": "Тексты и переводы", "kwork_id": 5, "parent_id": null, "is_active": true},
+  {"name": "ИИ-тексты", "kwork_id": 303, "parent_id": 5, "is_active": true},
+  {"name": "Переводы", "kwork_id": 35, "parent_id": 5, "is_active": true},
+  {"name": "Продающие и бизнес-тексты", "kwork_id": 74, "parent_id": 5, "is_active": true},
+  {"name": "Тексты и наполнение сайта", "kwork_id": 73, "parent_id": 5, "is_active": true},
+
+  {"name": "SEO и трафик", "kwork_id": 17, "parent_id": null, "is_active": true},
+  {"name": "SEO аудиты, консультации", "kwork_id": 44, "parent_id": 17, "is_active": true},
+  {"name": "Внутренняя оптимизация", "kwork_id": 43, "parent_id": 17, "is_active": true},
+  {"name": "Продвижение сайта в топ", "kwork_id": 273, "parent_id": 17, "is_active": true},
+  {"name": "Семантическое ядро", "kwork_id": 71, "parent_id": 17, "is_active": true},
+  {"name": "Ссылки", "kwork_id": 59, "parent_id": 17, "is_active": true},
+  {"name": "Статистика и аналитика", "kwork_id": 56, "parent_id": 17, "is_active": true},
+  {"name": "Трафик", "kwork_id": 72, "parent_id": 17, "is_active": true},
+
+  {"name": "Соцсети и маркетинг", "kwork_id": 45, "parent_id": null, "is_active": true},
+  {"name": "E-mail маркетинг и рассылки", "kwork_id": 108, "parent_id": 45, "is_active": true},
+  {"name": "Базы данных и клиентов", "kwork_id": 113, "parent_id": 45, "is_active": true},
+  {"name": "Контекстная реклама", "kwork_id": 40, "parent_id": 45, "is_active": true},
+  {"name": "Маркетинг и PR", "kwork_id": 47, "parent_id": 45, "is_active": true},
+  {"name": "Маркетплейсы и доски объявлений", "kwork_id": 112, "parent_id": 45, "is_active": true},
+  {"name": "Соцсети и SMM", "kwork_id": 46, "parent_id": 45, "is_active": true},
+
+  {"name": "Аудио, видео, съемка", "kwork_id": 7, "parent_id": null, "is_active": true},
+  {"name": "Аудиозапись и озвучка", "kwork_id": 20, "parent_id": 7, "is_active": true},
+  {"name": "Видеоролики", "kwork_id": 76, "parent_id": 7, "is_active": true},
+  {"name": "Видеосъемка и монтаж", "kwork_id": 78, "parent_id": 7, "is_active": true},
+  {"name": "ИИ-генерация видео", "kwork_id": 300, "parent_id": 7, "is_active": true},
+  {"name": "Интро и анимация логотипа", "kwork_id": 77, "parent_id": 7, "is_active": true},
+  {"name": "Музыка и песни", "kwork_id": 23, "parent_id": 7, "is_active": true},
+  {"name": "Редактирование аудио", "kwork_id": 106, "parent_id": 7, "is_active": true},
+
+  {"name": "Бизнес и жизнь", "kwork_id": 83, "parent_id": null, "is_active": true},
+  {"name": "Бухгалтерия и налоги", "kwork_id": 64, "parent_id": 83, "is_active": true},
+  {"name": "Обзвоны и продажи", "kwork_id": 262, "parent_id": 83, "is_active": true},
+  {"name": "Обучение и консалтинг", "kwork_id": 55, "parent_id": 83, "is_active": true},
+  {"name": "Персональный помощник", "kwork_id": 84, "parent_id": 83, "is_active": true},
+  {"name": "Подбор персонала", "kwork_id": 265, "parent_id": 83, "is_active": true},
+  {"name": "Продажа сайтов и групп", "kwork_id": 114, "parent_id": 83, "is_active": true},
+  {"name": "Стройка и ремонт", "kwork_id": 65, "parent_id": 83, "is_active": true},
+  {"name": "Юридическая помощь", "kwork_id": 63, "parent_id": 83, "is_active": true}
 ]
