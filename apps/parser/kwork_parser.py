@@ -210,44 +210,54 @@ class KworkParser:
     def extract_project_data(self, item: Tag, category: Category) -> Optional[dict]:
         """Извлечение данных одного проекта."""
 
-        # Извлечение ID проекта из ссылки в h1.wants-card__header-title > a
+        # Заголовок — может быть в span или a внутри h1.wants-card__header-title
         kwork_id = None
-        link = item.select_one('.wants-card__header-title a')
-        if link and link.get('href'):
-            href = link.get('href')
-            if '/projects/' in href:
-                try:
-                    kwork_id = int(href.split('/')[-1])
-                except (ValueError, IndexError):
-                    pass
+        title = ''
+
+        header_el = item.select_one('.wants-card__header-title')
+        if header_el:
+            link = header_el.select_one('a')
+            if link and link.get('href'):
+                href = link.get('href')
+                if '/projects/' in href:
+                    try:
+                        kwork_id = int(href.split('/')[-1])
+                    except (ValueError, IndexError):
+                        pass
+                title = link.get_text(strip=True)
+
+            # Если нет ссылки — заголовок в span (карточка в списке)
+            if not title:
+                span = header_el.select_one('span')
+                if span:
+                    title = span.get_text(strip=True)
 
         if not kwork_id:
             logger.debug(f'Could not extract kwork_id from item')
             return None
 
-        # Заголовок
-        title = self.safe_extract(item, '.wants-card__header-title a', 'text')
+        if not title:
+            title = f'Проект #{kwork_id}'
 
-        # Описание — парсим из скрытого блока (style="display: none;")
+        # Описание — теперь напрямую в .wants-card__description-text .breakwords.first-letter
+        # Скрытого блока нет, текст идёт сразу целиком
         description = ''
         desc_container = item.select_one('.wants-card__description-text')
         if desc_container:
-            # Скрытый блок с полным описанием
-            hidden_block = desc_container.select_one('.overflow-hidden[style*="none"] .d-inline')
-            if hidden_block:
-                description = hidden_block.get_text(separator=' ', strip=True)
+            # Прямой текст из .breakwords.first-letter
+            full_text_el = desc_container.select_one('.breakwords.first-letter')
+            if full_text_el:
+                description = full_text_el.get_text(separator=' ', strip=True)
 
-            # Если нет скрытого — берём видимый
+            # Фоллбэк: любой .breakwords внутри описания
             if not description:
-                visible_block = desc_container.select_one('.overflow-hidden .d-inline')
-                if visible_block:
-                    description = visible_block.get_text(separator=' ', strip=True)
+                any_break = desc_container.select_one('.breakwords')
+                if any_break:
+                    description = any_break.get_text(separator=' ', strip=True)
 
-            # Фоллбэк: ищем любой .d-inline внутри описания
+            # Фоллбэк: весь текст контейнера
             if not description:
-                any_inline = desc_container.select_one('.d-inline')
-                if any_inline:
-                    description = any_inline.get_text(separator=' ', strip=True)
+                description = desc_container.get_text(separator=' ', strip=True)
 
             description = ' '.join(description.split())
 
@@ -261,7 +271,6 @@ class KworkParser:
             else:
                 price_text = price_elem.get_text(strip=True)
 
-            # Убираем лишние слова
             price_text = price_text.replace('Цена', '').replace('Желаемый бюджет:', '').replace('до', '').strip()
 
         price = self.parse_price(price_text)
@@ -282,7 +291,7 @@ class KworkParser:
 
         return {
             'kwork_id': kwork_id,
-            'title': title or f'Проект #{kwork_id}',
+            'title': title,
             'description': description or '',
             'price': price,
             'currency': 'RUB',
