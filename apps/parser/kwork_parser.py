@@ -19,44 +19,44 @@ from bs4 import BeautifulSoup, Tag
 
 from apps.projects.models import Category, Project
 
-logger = logging.getLogger('parser')
+logger = logging.getLogger("parser")
 
 
 class KworkParser:
     """Парсер заказов с Kwork.ru с использованием Selenium."""
 
-    BASE_URL: str = 'https://kwork.ru'
-    DEBUG_PAGE_PATH: str = 'debug_page.html'
+    BASE_URL: str = "https://kwork.ru"
+    DEBUG_PAGE_PATH: str = "debug_page.html"
 
     def __init__(self, delay: int = 2, timeout: int = 10, max_pages: int = 5) -> None:
         self.delay = delay
         self.timeout = timeout
         self.max_pages = max_pages
         self.driver: Optional[WebDriver] = None
-        
+
     def _init_driver(self) -> None:
         """Инициализация Selenium WebDriver."""
         if self.driver:
             return
 
         chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument(
-            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-            'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
         try:
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
             self.driver.set_page_load_timeout(self.timeout)
-            logger.info('Chrome WebDriver initialized successfully')
+            logger.info("Chrome WebDriver initialized successfully")
         except Exception as e:
-            logger.error(f'Failed to initialize Chrome driver: {e}')
+            logger.error(f"Failed to initialize Chrome driver: {e}")
             raise
 
     def _close_driver(self) -> None:
@@ -81,67 +81,73 @@ class KworkParser:
         """
         if max_pages is None:
             max_pages = self.max_pages
-            
+
         try:
             category = Category.objects.get(kwork_id=category_id)
         except Category.DoesNotExist:
-            logger.error(f'Category with kwork_id={category_id} not found')
+            logger.error(f"Category with kwork_id={category_id} not found")
             return 0
-        
-        logger.info(f'Starting parse for category: {category.name} (ID: {category_id})')
-        
+
+        logger.info(f"Starting parse for category: {category.name} (ID: {category_id})")
+
         # Инициализация драйвера
         self._init_driver()
-        
+
         new_projects_count = 0
         page_new_count = 0
-        
+
         try:
             for page in range(1, max_pages + 1):
-                url = f'{self.BASE_URL}/projects?c={category_id}'
+                url = f"{self.BASE_URL}/projects?c={category_id}"
                 if page > 1:
-                    url += f'&page={page}'
-                
-                logger.info(f'Parsing page {page}: {url}')
-                
+                    url += f"&page={page}"
+
+                logger.info(f"Parsing page {page}: {url}")
+
                 try:
                     # Загрузка страницы
                     self.driver.get(url)
-                    
+
                     # Ждем загрузки контента (ждем появления карточек проектов)
                     try:
                         WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, ".wants-card__header-title"))
+                            EC.presence_of_element_located(
+                                (By.CSS_SELECTOR, ".wants-card__header-title")
+                            )
                         )
-                        logger.info('Wants-card header elements found')
+                        logger.info("Wants-card header elements found")
                     except Exception as e:
-                        logger.warning(f'Timeout waiting for wants-card__header-title: {e}')
-                    
+                        logger.warning(
+                            f"Timeout waiting for wants-card__header-title: {e}"
+                        )
+
                     # Дополнительная задержка для полной загрузки JS
                     time.sleep(3)
-                    
+
                     # Получаем HTML после загрузки JS
                     html = self.driver.page_source
-                    
+
                     # Сохраняем HTML для отладки (первая страница)
                     if page == 1:
-                        debug_path = os.path.join(settings.BASE_DIR, self.DEBUG_PAGE_PATH)
-                        with open(debug_path, 'w', encoding='utf-8') as f:
+                        debug_path = os.path.join(
+                            settings.BASE_DIR, self.DEBUG_PAGE_PATH
+                        )
+                        with open(debug_path, "w", encoding="utf-8") as f:
                             f.write(html)
-                        logger.debug('Saved page HTML to debug_page.html')
-                    
-                    soup = BeautifulSoup(html, 'lxml')
-                    
+                        logger.debug("Saved page HTML to debug_page.html")
+
+                    soup = BeautifulSoup(html, "lxml")
+
                     # Проверяем наличие карточек
-                    cards = soup.select('.want-card')
-                    logger.info(f'Found {len(cards)} want-card elements in HTML')
-                    
+                    cards = soup.select(".want-card")
+                    logger.info(f"Found {len(cards)} want-card elements in HTML")
+
                     projects = self.extract_projects(soup, category)
-                    
+
                     if not projects:
-                        logger.info(f'No projects found on page {page}, stopping')
+                        logger.info(f"No projects found on page {page}, stopping")
                         break
-                    
+
                     # Сохранение проектов
                     page_new_count = 0
                     for project_data in projects:
@@ -149,187 +155,196 @@ class KworkParser:
                         if created:
                             new_projects_count += 1
                             page_new_count += 1
-                    
-                    logger.info(f'Page {page}: found {len(projects)} projects, {page_new_count} new on this page')
-                    
+
+                    logger.info(
+                        f"Page {page}: found {len(projects)} projects, {page_new_count} new on this page"
+                    )
+
                     # Останавливаемся если на странице не было новых проектов
                     if page_new_count == 0:
-                        logger.info(f'No new projects on page {page}, stopping parsing')
+                        logger.info(f"No new projects on page {page}, stopping parsing")
                         break
-                    
+
                     # Задержка между запросами
                     if page < max_pages:
                         delay = random.uniform(self.delay, self.delay + 2)
-                        logger.debug(f'Sleeping {delay:.2f} seconds')
+                        logger.debug(f"Sleeping {delay:.2f} seconds")
                         time.sleep(delay)
-                        
+
                 except Exception as e:
-                    logger.error(f'Error parsing page {page}: {e}', exc_info=True)
+                    logger.error(f"Error parsing page {page}: {e}", exc_info=True)
                     break
-        
+
         finally:
             # Закрываем драйвер
             self._close_driver()
-        
-        logger.info(f'Parsing completed. Total new projects: {new_projects_count}')
+
+        logger.info(f"Parsing completed. Total new projects: {new_projects_count}")
         return new_projects_count
-    
+
     def extract_projects(self, soup: BeautifulSoup, category: Category) -> list[dict]:
         """Извлечение проектов со страницы."""
         projects = []
 
         # Ищем родительские контейнеры карточек через заголовки
-        title_elements = soup.select('.wants-card__header-title')
+        title_elements = soup.select(".wants-card__header-title")
 
-        logger.info(f'Found {len(title_elements)} project headers')
+        logger.info(f"Found {len(title_elements)} project headers")
 
         for idx, title_el in enumerate(title_elements):
             try:
                 # Поднимаемся до контейнера карточки (div.wants-card__left)
-                card = title_el.find_parent('div', class_='wants-card__left')
+                card = title_el.find_parent("div", class_="wants-card__left")
                 if not card:
-                    card = title_el.find_parent('div')
+                    card = title_el.find_parent("div")
 
                 if not card:
                     continue
 
-                logger.debug(f'Processing item {idx + 1}/{len(title_elements)}')
+                logger.debug(f"Processing item {idx + 1}/{len(title_elements)}")
                 project_data = self.extract_project_data(card, category)
-                if project_data and project_data.get('kwork_id'):
+                if project_data and project_data.get("kwork_id"):
                     projects.append(project_data)
-                    logger.info(f'Successfully extracted project {project_data["kwork_id"]}')
+                    logger.info(
+                        f'Successfully extracted project {project_data["kwork_id"]}'
+                    )
                 else:
-                    logger.warning(f'Item {idx + 1} returned no data')
+                    logger.warning(f"Item {idx + 1} returned no data")
             except Exception as e:
-                logger.error(f'Error extracting project {idx + 1}: {e}', exc_info=True)
+                logger.error(f"Error extracting project {idx + 1}: {e}", exc_info=True)
                 continue
-        
-        logger.info(f'Total extracted projects: {len(projects)}')
+
+        logger.info(f"Total extracted projects: {len(projects)}")
         return projects
-    
+
     def extract_project_data(self, item: Tag, category: Category) -> Optional[dict]:
         """Извлечение данных одного проекта."""
 
         # Заголовок — может быть в span или a внутри h1.wants-card__header-title
         kwork_id = None
-        title = ''
+        title = ""
 
-        header_el = item.select_one('.wants-card__header-title')
+        header_el = item.select_one(".wants-card__header-title")
         if header_el:
-            link = header_el.select_one('a')
-            if link and link.get('href'):
-                href = link.get('href')
-                if '/projects/' in href:
+            link = header_el.select_one("a")
+            if link and link.get("href"):
+                href = link.get("href")
+                if "/projects/" in href:
                     try:
-                        kwork_id = int(href.split('/')[-1])
+                        kwork_id = int(href.split("/")[-1])
                     except (ValueError, IndexError):
                         pass
                 title = link.get_text(strip=True)
 
             # Если нет ссылки — заголовок в span (карточка в списке)
             if not title:
-                span = header_el.select_one('span')
+                span = header_el.select_one("span")
                 if span:
                     title = span.get_text(strip=True)
 
         if not kwork_id:
-            logger.debug(f'Could not extract kwork_id from item')
+            logger.debug(f"Could not extract kwork_id from item")
             return None
 
         if not title:
-            title = f'Проект #{kwork_id}'
+            title = f"Проект #{kwork_id}"
 
         # Описание — теперь напрямую в .wants-card__description-text .breakwords.first-letter
         # Скрытого блока нет, текст идёт сразу целиком
-        description = ''
-        desc_container = item.select_one('.wants-card__description-text')
+        description = ""
+        desc_container = item.select_one(".wants-card__description-text")
         if desc_container:
             # Прямой текст из .breakwords.first-letter
-            full_text_el = desc_container.select_one('.breakwords.first-letter')
+            full_text_el = desc_container.select_one(".breakwords.first-letter")
             if full_text_el:
-                description = full_text_el.get_text(separator=' ', strip=True)
+                description = full_text_el.get_text(separator=" ", strip=True)
 
             # Фоллбэк: любой .breakwords внутри описания
             if not description:
-                any_break = desc_container.select_one('.breakwords')
+                any_break = desc_container.select_one(".breakwords")
                 if any_break:
-                    description = any_break.get_text(separator=' ', strip=True)
+                    description = any_break.get_text(separator=" ", strip=True)
 
             # Фоллбэк: весь текст контейнера
             if not description:
-                description = desc_container.get_text(separator=' ', strip=True)
+                description = desc_container.get_text(separator=" ", strip=True)
 
-            description = ' '.join(description.split())
+            description = " ".join(description.split())
 
         # Цена — из .wants-card__price .d-inline
-        price_text = ''
-        price_elem = item.select_one('.wants-card__price')
+        price_text = ""
+        price_elem = item.select_one(".wants-card__price")
         if price_elem:
-            price_div = price_elem.select_one('.d-inline')
+            price_div = price_elem.select_one(".d-inline")
             if price_div:
                 price_text = price_div.get_text(strip=True)
             else:
                 price_text = price_elem.get_text(strip=True)
 
-            price_text = price_text.replace('Цена', '').replace('Желаемый бюджет:', '').replace('до', '').strip()
+            price_text = (
+                price_text.replace("Цена", "")
+                .replace("Желаемый бюджет:", "")
+                .replace("до", "")
+                .strip()
+            )
 
         price = self.parse_price(price_text)
 
         # Автор
-        author = ''
-        author_links = item.select('a')
+        author = ""
+        author_links = item.select("a")
         for a in author_links:
-            href = a.get('href', '')
-            if '/user/' in href:
+            href = a.get("href", "")
+            if "/user/" in href:
                 author = a.get_text(strip=True)
                 break
 
         # URL проекта
-        url = f'{self.BASE_URL}/projects/{kwork_id}'
+        url = f"{self.BASE_URL}/projects/{kwork_id}"
 
-        logger.debug(f'Extracted project: {kwork_id} - {title[:50]} - Price: {price}')
+        logger.debug(f"Extracted project: {kwork_id} - {title[:50]} - Price: {price}")
 
         return {
-            'kwork_id': kwork_id,
-            'title': title,
-            'description': description or '',
-            'price': price,
-            'currency': 'RUB',
-            'category': category,
-            'url': url,
-            'author_name': author or '',
-            'status': 'new',
-            'is_viewed': False,
+            "kwork_id": kwork_id,
+            "title": title,
+            "description": description or "",
+            "price": price,
+            "currency": "RUB",
+            "category": category,
+            "url": url,
+            "author_name": author or "",
+            "status": "new",
+            "is_viewed": False,
         }
-    
-    def safe_extract(self, item: Tag, selector: str, attr: str = 'text') -> str:
+
+    def safe_extract(self, item: Tag, selector: str, attr: str = "text") -> str:
         """Безопасное извлечение данных."""
         try:
             element = item.select_one(selector)
             if element:
-                if attr == 'text':
+                if attr == "text":
                     return element.get_text(strip=True)
                 else:
-                    return element.get(attr, '')
+                    return element.get(attr, "")
         except Exception:
             pass
-        return ''
-    
+        return ""
+
     def parse_price(self, price_text: str) -> Optional[Decimal]:
         """Парсинг цены из текста."""
         if not price_text:
             return None
-        
+
         try:
             # Убираем все кроме цифр и точки
-            price_str = ''.join(c for c in price_text if c.isdigit() or c == '.')
+            price_str = "".join(c for c in price_text if c.isdigit() or c == ".")
             if price_str:
                 return Decimal(price_str)
         except Exception:
             pass
-        
+
         return None
-    
+
     def save_project(self, project_data: dict) -> bool:
         """
         Сохранение или обновление проекта в БД.
@@ -337,26 +352,26 @@ class KworkParser:
         Returns:
             True если проект новый, False если уже существует.
         """
-        kwork_id = project_data['kwork_id']
-        
+        kwork_id = project_data["kwork_id"]
+
         # Проверка существования
         existing = Project.objects.filter(kwork_id=kwork_id).first()
-        
+
         if existing:
-            existing.title = project_data['title']
-            existing.description = project_data['description']
-            existing.price = project_data['price']
-            existing.author_name = project_data['author_name']
-            existing.url = project_data['url']
+            existing.title = project_data["title"]
+            existing.description = project_data["description"]
+            existing.price = project_data["price"]
+            existing.author_name = project_data["author_name"]
+            existing.url = project_data["url"]
             existing.parsed_at = timezone.now()
             existing.save()
-            logger.debug(f'Updated existing project: {kwork_id}')
+            logger.debug(f"Updated existing project: {kwork_id}")
             return False
-        
+
         try:
             project = Project.objects.create(**project_data)
-            logger.info(f'Created new project: {project.title} (ID: {kwork_id})')
+            logger.info(f"Created new project: {project.title} (ID: {kwork_id})")
             return True
         except Exception as e:
-            logger.error(f'Error saving project {kwork_id}: {e}')
+            logger.error(f"Error saving project {kwork_id}: {e}")
             return False

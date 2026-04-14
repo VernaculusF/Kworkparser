@@ -10,26 +10,65 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('projects', '0001_initial'),
+        ("projects", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Response',
+            name="Response",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('sent_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Дата отправки')),
-                ('notes', models.TextField(blank=True, verbose_name='Заметки')),
-                ('status', models.CharField(choices=[('sent', 'Отправлен'), ('accepted', 'Принят'), ('rejected', 'Отклонен'), ('no_answer', 'Нет ответа')], default='sent', max_length=50, verbose_name='Статус')),
-                ('result', models.CharField(blank=True, max_length=50, verbose_name='Результат')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='responses', to='projects.project', verbose_name='Заказ')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "sent_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="Дата отправки"
+                    ),
+                ),
+                ("notes", models.TextField(blank=True, verbose_name="Заметки")),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("sent", "Отправлен"),
+                            ("accepted", "Принят"),
+                            ("rejected", "Отклонен"),
+                            ("no_answer", "Нет ответа"),
+                        ],
+                        default="sent",
+                        max_length=50,
+                        verbose_name="Статус",
+                    ),
+                ),
+                (
+                    "result",
+                    models.CharField(
+                        blank=True, max_length=50, verbose_name="Результат"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "project",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="responses",
+                        to="projects.project",
+                        verbose_name="Заказ",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Отклик',
-                'verbose_name_plural': 'Отклики',
-                'ordering': ['-sent_at'],
+                "verbose_name": "Отклик",
+                "verbose_name_plural": "Отклики",
+                "ordering": ["-sent_at"],
             },
         ),
     ]

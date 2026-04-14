@@ -21,7 +21,7 @@ PAGE_LOAD_DELAY = 3  # секунды
 
 # Глобальная очередь для передачи данных о парсинге
 parse_queue: queue.Queue = queue.Queue()
-parse_status: dict = {'running': False, 'total': 0}
+parse_status: dict = {"running": False, "total": 0}
 
 
 def _get_filtered_projects(
@@ -31,7 +31,7 @@ def _get_filtered_projects(
     force_status: Optional[str] = None,
 ) -> QuerySet[Project]:
     """Общая функция фильтрации проектов для устранения дублирования кода."""
-    queryset = Project.objects.select_related('category').all()
+    queryset = Project.objects.select_related("category").all()
 
     if force_status:
         queryset = queryset.filter(status=force_status)
@@ -42,7 +42,7 @@ def _get_filtered_projects(
         # Включаем основную категорию и все подкатегории
         try:
             cat = Category.objects.get(pk=int(category_id))
-            subcategory_ids = list(cat.subcategories.values_list('id', flat=True))
+            subcategory_ids = list(cat.subcategories.values_list("id", flat=True))
             all_ids = [cat.id] + subcategory_ids
             queryset = queryset.filter(category_id__in=all_ids)
         except (Category.DoesNotExist, ValueError):
@@ -59,13 +59,13 @@ def _get_filtered_projects(
 def _get_paginated_projects(request: HttpRequest, queryset: QuerySet[Project]) -> Page:
     """Пагинация списка проектов."""
     paginator = Paginator(queryset, PAGINATE_BY)
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     return paginator.get_page(page_number)
 
 
 def _get_active_categories() -> QuerySet[Category]:
     """Получение активных категорий для фильтров."""
-    return Category.objects.filter(is_active=True).prefetch_related('subcategories')
+    return Category.objects.filter(is_active=True).prefetch_related("subcategories")
 
 
 def _build_filter_context(
@@ -76,19 +76,19 @@ def _build_filter_context(
 ) -> dict:
     """Общий контекст для views с фильтрами."""
     return {
-        'page_obj': page_obj,
-        'categories': _get_active_categories(),
-        'current_status': status,
-        'current_category': category_id,
-        'search_query': search,
+        "page_obj": page_obj,
+        "categories": _get_active_categories(),
+        "current_status": status,
+        "current_category": category_id,
+        "search_query": search,
     }
 
 
 def project_list(request: HttpRequest) -> render:
     """Список заказов с фильтрами."""
-    status = request.GET.get('status')
-    category_id = request.GET.get('category')
-    search = request.GET.get('search')
+    status = request.GET.get("status")
+    category_id = request.GET.get("category")
+    search = request.GET.get("search")
 
     projects = _get_filtered_projects(
         status_filter=status,
@@ -97,26 +97,39 @@ def project_list(request: HttpRequest) -> render:
     )
     page_obj = _get_paginated_projects(request, projects)
 
-    return render(request, 'projects/project_list.html', _build_filter_context(
-        page_obj, status=status, category_id=category_id, search=search,
-    ))
+    return render(
+        request,
+        "projects/project_list.html",
+        _build_filter_context(
+            page_obj,
+            status=status,
+            category_id=category_id,
+            search=search,
+        ),
+    )
 
 
 def responded_list(request: HttpRequest) -> render:
     """Список заказов с откликами."""
-    category_id = request.GET.get('category')
-    search = request.GET.get('search')
+    category_id = request.GET.get("category")
+    search = request.GET.get("search")
 
     projects = _get_filtered_projects(
         category_id=category_id,
         search=search,
-        force_status='responded',
+        force_status="responded",
     )
     page_obj = _get_paginated_projects(request, projects)
 
-    return render(request, 'projects/responded_list.html', _build_filter_context(
-        page_obj, category_id=category_id, search=search,
-    ))
+    return render(
+        request,
+        "projects/responded_list.html",
+        _build_filter_context(
+            page_obj,
+            category_id=category_id,
+            search=search,
+        ),
+    )
 
 
 def project_detail(request: HttpRequest, pk: int) -> render:
@@ -125,56 +138,56 @@ def project_detail(request: HttpRequest, pk: int) -> render:
 
     if not project.is_viewed:
         project.is_viewed = True
-        if project.status == 'new':
-            project.status = 'viewed'
+        if project.status == "new":
+            project.status = "viewed"
         project.save()
 
-    return render(request, 'projects/project_detail.html', {'project': project})
+    return render(request, "projects/project_detail.html", {"project": project})
 
 
 @require_POST
 def mark_responded(request: HttpRequest, pk: int) -> JsonResponse:
     """Отметить отклик отправлен."""
     project = get_object_or_404(Project, pk=pk)
-    project.status = 'responded'
+    project.status = "responded"
     project.save()
 
-    return JsonResponse({'success': True})
+    return JsonResponse({"success": True})
 
 
 @require_POST
 def mark_archived(request: HttpRequest, pk: int) -> redirect:
     """Архивировать заказ."""
     project = get_object_or_404(Project, pk=pk)
-    project.status = 'archived'
+    project.status = "archived"
     project.save()
 
-    return redirect('projects:project_list')
+    return redirect("projects:project_list")
 
 
 @require_POST
 def parse_projects_start(request: HttpRequest) -> JsonResponse:
     """Запуск парсинга в фоновом потоке."""
-    if parse_status['running']:
-        return JsonResponse({'error': 'Парсинг уже запущен'}, status=400)
+    if parse_status["running"]:
+        return JsonResponse({"error": "Парсинг уже запущен"}, status=400)
 
-    category_id = request.POST.get('category_id')
+    category_id = request.POST.get("category_id")
 
     if not category_id:
-        return JsonResponse({'error': 'Выберите категорию'}, status=400)
+        return JsonResponse({"error": "Выберите категорию"}, status=400)
 
     # Очищаем очередь
     while not parse_queue.empty():
         parse_queue.get()
 
-    parse_status['running'] = True
-    parse_status['total'] = 0
+    parse_status["running"] = True
+    parse_status["total"] = 0
 
     thread = threading.Thread(target=run_parser, args=(category_id,))
     thread.daemon = True
     thread.start()
 
-    return JsonResponse({'status': 'started'})
+    return JsonResponse({"status": "started"})
 
 
 def parse_projects_status(request: HttpRequest) -> JsonResponse:
@@ -188,17 +201,19 @@ def parse_projects_status(request: HttpRequest) -> JsonResponse:
         except queue.Empty:
             break
 
-    return JsonResponse({
-        'events': events,
-        'running': parse_status['running'],
-        'total': parse_status['total'],
-    })
+    return JsonResponse(
+        {
+            "events": events,
+            "running": parse_status["running"],
+            "total": parse_status["total"],
+        }
+    )
 
 
 def run_parser(category_id: str) -> None:
     """Функция парсинга в фоновом потоке."""
     try:
-        if category_id == 'all':
+        if category_id == "all":
             # Парсим все подкатегории (основные — только как контейнеры)
             categories = Category.objects.filter(parent__isnull=False, is_active=True)
             parser = KworkParser(
@@ -209,14 +224,21 @@ def run_parser(category_id: str) -> None:
 
             for category in categories:
                 parent_name = f"{category.parent.name} → " if category.parent else ""
-                parse_queue.put({'type': 'category_start', 'category': f'{parent_name}{category.name}'})
+                parse_queue.put(
+                    {
+                        "type": "category_start",
+                        "category": f"{parent_name}{category.name}",
+                    }
+                )
                 new_count = parse_single_category(parser, category)
-                parse_status['total'] += new_count
-                parse_queue.put({
-                    'type': 'category_done',
-                    'category': f'{parent_name}{category.name}',
-                    'count': new_count,
-                })
+                parse_status["total"] += new_count
+                parse_queue.put(
+                    {
+                        "type": "category_done",
+                        "category": f"{parent_name}{category.name}",
+                        "count": new_count,
+                    }
+                )
 
         elif category_id:
             try:
@@ -226,7 +248,12 @@ def run_parser(category_id: str) -> None:
                 if category.parent is None:
                     subcategories = list(category.subcategories.filter(is_active=True))
                     if subcategories:
-                        parse_queue.put({'type': 'category_start', 'category': f'{category.name} (все подкатегории)'})
+                        parse_queue.put(
+                            {
+                                "type": "category_start",
+                                "category": f"{category.name} (все подкатегории)",
+                            }
+                        )
                         parser = KworkParser(
                             delay=settings.PARSER_DELAY,
                             timeout=settings.PARSER_TIMEOUT,
@@ -234,14 +261,18 @@ def run_parser(category_id: str) -> None:
                         )
 
                         for subcat in subcategories:
-                            parse_queue.put({'type': 'info', 'message': f'Парсинг: {subcat.name}'})
+                            parse_queue.put(
+                                {"type": "info", "message": f"Парсинг: {subcat.name}"}
+                            )
                             new_count = parse_single_category(parser, subcat)
-                            parse_status['total'] += new_count
-                            parse_queue.put({
-                                'type': 'category_done',
-                                'category': subcat.name,
-                                'count': new_count,
-                            })
+                            parse_status["total"] += new_count
+                            parse_queue.put(
+                                {
+                                    "type": "category_done",
+                                    "category": subcat.name,
+                                    "count": new_count,
+                                }
+                            )
                     else:
                         # Нет подкатегорий — парсим саму основную
                         _parse_single(parser_category=category, category_id=category_id)
@@ -250,18 +281,18 @@ def run_parser(category_id: str) -> None:
                     _parse_single(parser_category=category, category_id=category_id)
 
             except Category.DoesNotExist:
-                parse_queue.put({'type': 'error', 'message': 'Категория не найдена'})
+                parse_queue.put({"type": "error", "message": "Категория не найдена"})
 
-        parse_queue.put({'type': 'complete', 'total': parse_status['total']})
+        parse_queue.put({"type": "complete", "total": parse_status["total"]})
 
     except Exception as e:
-        parse_queue.put({'type': 'error', 'message': str(e)})
+        parse_queue.put({"type": "error", "message": str(e)})
 
     finally:
-        parse_status['running'] = False
+        parse_status["running"] = False
 
 
-def _parse_single(parser_category: 'Category', category_id: str) -> None:
+def _parse_single(parser_category: "Category", category_id: str) -> None:
     """Парсинг одной категории."""
     parser = KworkParser(
         delay=settings.PARSER_DELAY,
@@ -269,9 +300,9 @@ def _parse_single(parser_category: 'Category', category_id: str) -> None:
         max_pages=MAX_PARSE_PAGES,
     )
 
-    parse_queue.put({'type': 'category_start', 'category': parser_category.name})
+    parse_queue.put({"type": "category_start", "category": parser_category.name})
     new_count = parse_single_category(parser, parser_category)
-    parse_status['total'] = new_count
+    parse_status["total"] = new_count
 
 
 def parse_single_category(parser: KworkParser, category: Category) -> int:
@@ -284,11 +315,11 @@ def parse_single_category(parser: KworkParser, category: Category) -> int:
 
     try:
         while True:
-            url = f'{parser.BASE_URL}/projects?c={category.kwork_id}'
+            url = f"{parser.BASE_URL}/projects?c={category.kwork_id}"
             if page > 1:
-                url += f'&page={page}'
+                url += f"&page={page}"
 
-            parse_queue.put({'type': 'page_start', 'page': page})
+            parse_queue.put({"type": "page_start", "page": page})
 
             try:
                 parser.driver.get(url)
@@ -300,22 +331,29 @@ def parse_single_category(parser: KworkParser, category: Category) -> int:
                     import time
 
                     WebDriverWait(parser.driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, ".wants-card__header-title"))
+                        EC.presence_of_element_located(
+                            (By.CSS_SELECTOR, ".wants-card__header-title")
+                        )
                     )
                 except Exception:
-                    parse_queue.put({'type': 'page_done', 'page': page, 'count': 0, 'no_more': True})
+                    parse_queue.put(
+                        {"type": "page_done", "page": page, "count": 0, "no_more": True}
+                    )
                     break
 
                 time.sleep(PAGE_LOAD_DELAY)
 
                 html = parser.driver.page_source
                 from bs4 import BeautifulSoup
-                soup = BeautifulSoup(html, 'lxml')
+
+                soup = BeautifulSoup(html, "lxml")
 
                 projects = parser.extract_projects(soup, category)
 
                 if not projects:
-                    parse_queue.put({'type': 'page_done', 'page': page, 'count': 0, 'no_more': True})
+                    parse_queue.put(
+                        {"type": "page_done", "page": page, "count": 0, "no_more": True}
+                    )
                     break
 
                 page_new = 0
@@ -325,35 +363,41 @@ def parse_single_category(parser: KworkParser, category: Category) -> int:
                         page_new += 1
                         new_projects_count += 1
 
-                        parse_queue.put({
-                            'type': 'new_project',
-                            'project': {
-                                'id': project_data['kwork_id'],
-                                'title': project_data['title'],
-                                'price': str(project_data.get('price', '')),
-                                'url': project_data['url'],
-                            },
-                        })
+                        parse_queue.put(
+                            {
+                                "type": "new_project",
+                                "project": {
+                                    "id": project_data["kwork_id"],
+                                    "title": project_data["title"],
+                                    "price": str(project_data.get("price", "")),
+                                    "url": project_data["url"],
+                                },
+                            }
+                        )
 
                 if page_new == 0:
                     empty_pages += 1
                 else:
                     empty_pages = 0
 
-                parse_queue.put({'type': 'page_done', 'page': page, 'count': page_new})
+                parse_queue.put({"type": "page_done", "page": page, "count": page_new})
 
                 if empty_pages >= EMPTY_PAGES_THRESHOLD:
-                    parse_queue.put({
-                        'type': 'info',
-                        'message': f'Остановка: {EMPTY_PAGES_THRESHOLD} страницы подряд без новых проектов',
-                    })
+                    parse_queue.put(
+                        {
+                            "type": "info",
+                            "message": f"Остановка: {EMPTY_PAGES_THRESHOLD} страницы подряд без новых проектов",
+                        }
+                    )
                     break
 
                 page += 1
                 time.sleep(parser.delay)
 
             except Exception as e:
-                parse_queue.put({'type': 'error', 'message': f'Ошибка на странице {page}: {str(e)}'})
+                parse_queue.put(
+                    {"type": "error", "message": f"Ошибка на странице {page}: {str(e)}"}
+                )
                 break
 
     finally:

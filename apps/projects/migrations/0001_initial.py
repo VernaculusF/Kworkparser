@@ -9,54 +9,163 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255, verbose_name='Название')),
-                ('kwork_id', models.IntegerField(unique=True, verbose_name='ID на Kwork')),
-                ('url', models.URLField(max_length=500, verbose_name='URL')),
-                ('is_active', models.BooleanField(default=True, verbose_name='Активна')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='subcategories', to='projects.category', verbose_name='Родительская категория')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255, verbose_name="Название")),
+                (
+                    "kwork_id",
+                    models.IntegerField(unique=True, verbose_name="ID на Kwork"),
+                ),
+                ("url", models.URLField(max_length=500, verbose_name="URL")),
+                (
+                    "is_active",
+                    models.BooleanField(default=True, verbose_name="Активна"),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "parent",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="subcategories",
+                        to="projects.category",
+                        verbose_name="Родительская категория",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Категория',
-                'verbose_name_plural': 'Категории',
-                'ordering': ['name'],
+                "verbose_name": "Категория",
+                "verbose_name_plural": "Категории",
+                "ordering": ["name"],
             },
         ),
         migrations.CreateModel(
-            name='Project',
+            name="Project",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('kwork_id', models.IntegerField(unique=True, verbose_name='ID на Kwork')),
-                ('title', models.CharField(max_length=500, verbose_name='Заголовок')),
-                ('description', models.TextField(blank=True, verbose_name='Описание')),
-                ('price', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Цена')),
-                ('currency', models.CharField(default='RUB', max_length=10, verbose_name='Валюта')),
-                ('url', models.URLField(max_length=500, verbose_name='URL')),
-                ('author_name', models.CharField(blank=True, max_length=255, verbose_name='Заказчик')),
-                ('author_rating', models.DecimalField(blank=True, decimal_places=2, max_digits=3, null=True, verbose_name='Рейтинг заказчика')),
-                ('deadline', models.CharField(blank=True, max_length=100, verbose_name='Срок')),
-                ('status', models.CharField(choices=[('new', 'Новый'), ('viewed', 'Просмотрен'), ('responded', 'Отклик отправлен'), ('archived', 'Архив')], default='new', max_length=50, verbose_name='Статус')),
-                ('is_viewed', models.BooleanField(default=False, verbose_name='Просмотрен')),
-                ('parsed_at', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Спарсен')),
-                ('published_at', models.DateTimeField(blank=True, null=True, verbose_name='Опубликован')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='projects', to='projects.category', verbose_name='Категория')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "kwork_id",
+                    models.IntegerField(unique=True, verbose_name="ID на Kwork"),
+                ),
+                ("title", models.CharField(max_length=500, verbose_name="Заголовок")),
+                ("description", models.TextField(blank=True, verbose_name="Описание")),
+                (
+                    "price",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=10,
+                        null=True,
+                        verbose_name="Цена",
+                    ),
+                ),
+                (
+                    "currency",
+                    models.CharField(
+                        default="RUB", max_length=10, verbose_name="Валюта"
+                    ),
+                ),
+                ("url", models.URLField(max_length=500, verbose_name="URL")),
+                (
+                    "author_name",
+                    models.CharField(
+                        blank=True, max_length=255, verbose_name="Заказчик"
+                    ),
+                ),
+                (
+                    "author_rating",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=3,
+                        null=True,
+                        verbose_name="Рейтинг заказчика",
+                    ),
+                ),
+                (
+                    "deadline",
+                    models.CharField(blank=True, max_length=100, verbose_name="Срок"),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("new", "Новый"),
+                            ("viewed", "Просмотрен"),
+                            ("responded", "Отклик отправлен"),
+                            ("archived", "Архив"),
+                        ],
+                        default="new",
+                        max_length=50,
+                        verbose_name="Статус",
+                    ),
+                ),
+                (
+                    "is_viewed",
+                    models.BooleanField(default=False, verbose_name="Просмотрен"),
+                ),
+                (
+                    "parsed_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, verbose_name="Спарсен"
+                    ),
+                ),
+                (
+                    "published_at",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Опубликован"
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="projects",
+                        to="projects.category",
+                        verbose_name="Категория",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Заказ',
-                'verbose_name_plural': 'Заказы',
-                'ordering': ['-parsed_at'],
-                'indexes': [models.Index(fields=['status'], name='projects_pr_status_f023cb_idx'), models.Index(fields=['is_viewed'], name='projects_pr_is_view_e5b198_idx'), models.Index(fields=['-parsed_at'], name='projects_pr_parsed__60f58f_idx')],
+                "verbose_name": "Заказ",
+                "verbose_name_plural": "Заказы",
+                "ordering": ["-parsed_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["status"], name="projects_pr_status_f023cb_idx"
+                    ),
+                    models.Index(
+                        fields=["is_viewed"], name="projects_pr_is_view_e5b198_idx"
+                    ),
+                    models.Index(
+                        fields=["-parsed_at"], name="projects_pr_parsed__60f58f_idx"
+                    ),
+                ],
             },
         ),
     ]
