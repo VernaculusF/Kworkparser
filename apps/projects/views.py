@@ -260,7 +260,7 @@ def parse_single_category(parser: KworkParser, category: Category) -> int:
                     import time
 
                     WebDriverWait(parser.driver, 10).until(
-                        EC.presence_of_element_located((By.CLASS_NAME, "want-card"))
+                        EC.presence_of_element_located((By.CSS_SELECTOR, ".wants-card__header-title"))
                     )
                 except Exception:
                     parse_queue.put({'type': 'page_done', 'page': page, 'count': 0, 'no_more': True})

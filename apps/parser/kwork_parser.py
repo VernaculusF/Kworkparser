@@ -111,11 +111,11 @@ class KworkParser:
                     # Ждем загрузки контента (ждем появления карточек проектов)
                     try:
                         WebDriverWait(self.driver, 10).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, "want-card"))
+                            EC.presence_of_element_located((By.CSS_SELECTOR, ".wants-card__header-title"))
                         )
-                        logger.info('Want-card elements found')
+                        logger.info('Wants-card header elements found')
                     except Exception as e:
-                        logger.warning(f'Timeout waiting for want-card: {e}')
+                        logger.warning(f'Timeout waiting for wants-card__header-title: {e}')
                     
                     # Дополнительная задержка для полной загрузки JS
                     time.sleep(3)
@@ -177,16 +177,24 @@ class KworkParser:
     def extract_projects(self, soup: BeautifulSoup, category: Category) -> list[dict]:
         """Извлечение проектов со страницы."""
         projects = []
-        
-        # Реальный селектор из HTML Kwork
-        items = soup.select('.want-card')
-        
-        logger.info(f'Found {len(items)} project items')
-        
-        for idx, item in enumerate(items):
+
+        # Ищем родительские контейнеры карточек через заголовки
+        title_elements = soup.select('.wants-card__header-title')
+
+        logger.info(f'Found {len(title_elements)} project headers')
+
+        for idx, title_el in enumerate(title_elements):
             try:
-                logger.debug(f'Processing item {idx + 1}/{len(items)}')
-                project_data = self.extract_project_data(item, category)
+                # Поднимаемся до контейнера карточки (div.wants-card__left)
+                card = title_el.find_parent('div', class_='wants-card__left')
+                if not card:
+                    card = title_el.find_parent('div')
+
+                if not card:
+                    continue
+
+                logger.debug(f'Processing item {idx + 1}/{len(title_elements)}')
+                project_data = self.extract_project_data(card, category)
                 if project_data and project_data.get('kwork_id'):
                     projects.append(project_data)
                     logger.info(f'Successfully extracted project {project_data["kwork_id"]}')
@@ -201,65 +209,64 @@ class KworkParser:
     
     def extract_project_data(self, item: Tag, category: Category) -> Optional[dict]:
         """Извлечение данных одного проекта."""
-        
-        # Извлечение ID проекта из ссылки
+
+        # Извлечение ID проекта из ссылки в h1.wants-card__header-title > a
         kwork_id = None
         link = item.select_one('.wants-card__header-title a')
         if link and link.get('href'):
             href = link.get('href')
             if '/projects/' in href:
                 try:
-                    # Извлекаем ID из URL типа "/projects/3149022"
                     kwork_id = int(href.split('/')[-1])
                 except (ValueError, IndexError):
                     pass
-        
+
         if not kwork_id:
             logger.debug(f'Could not extract kwork_id from item')
             return None
-        
+
         # Заголовок
         title = self.safe_extract(item, '.wants-card__header-title a', 'text')
-        
-        # Описание - парсим полное описание из скрытого блока
+
+        # Описание — парсим из скрытого блока (style="display: none;")
         description = ''
         desc_container = item.select_one('.wants-card__description-text')
         if desc_container:
-            # Ищем скрытый блок с полным описанием (style="display: none;")
-            hidden_block = desc_container.select_one('.breakwords.overflow-hidden[style*="none"]')
+            # Скрытый блок с полным описанием
+            hidden_block = desc_container.select_one('.overflow-hidden[style*="none"] .d-inline')
             if hidden_block:
-                # Берем div внутри скрытого блока
-                full_desc = hidden_block.select_one('div.d-inline')
-                if full_desc:
-                    description = full_desc.get_text(separator=' ', strip=True)
-            
-            # Если скрытого блока нет, берем видимый
+                description = hidden_block.get_text(separator=' ', strip=True)
+
+            # Если нет скрытого — берём видимый
             if not description:
                 visible_block = desc_container.select_one('.overflow-hidden .d-inline')
                 if visible_block:
                     description = visible_block.get_text(separator=' ', strip=True)
-            
-            # Убираем лишние пробелы
+
+            # Фоллбэк: ищем любой .d-inline внутри описания
+            if not description:
+                any_inline = desc_container.select_one('.d-inline')
+                if any_inline:
+                    description = any_inline.get_text(separator=' ', strip=True)
+
             description = ' '.join(description.split())
-        
-        # Цена - парсим из wants-card__price, убираем комментарии
+
+        # Цена — из .wants-card__price .d-inline
         price_text = ''
         price_elem = item.select_one('.wants-card__price')
         if price_elem:
-            # Ищем div с классом d-inline внутри wants-card__price
-            price_div = price_elem.select_one('div.d-inline')
+            price_div = price_elem.select_one('.d-inline')
             if price_div:
                 price_text = price_div.get_text(strip=True)
             else:
-                # Если нет d-inline, берем весь текст
                 price_text = price_elem.get_text(strip=True)
-            
-            # Убираем "Цена", "Желаемый бюджет", "до" и т.д.
+
+            # Убираем лишние слова
             price_text = price_text.replace('Цена', '').replace('Желаемый бюджет:', '').replace('до', '').strip()
-        
+
         price = self.parse_price(price_text)
-        
-        # Автор - ссылка на профиль пользователя
+
+        # Автор
         author = ''
         author_links = item.select('a')
         for a in author_links:
@@ -267,12 +274,12 @@ class KworkParser:
             if '/user/' in href:
                 author = a.get_text(strip=True)
                 break
-        
+
         # URL проекта
         url = f'{self.BASE_URL}/projects/{kwork_id}'
-        
+
         logger.debug(f'Extracted project: {kwork_id} - {title[:50]} - Price: {price}')
-        
+
         return {
             'kwork_id': kwork_id,
             'title': title or f'Проект #{kwork_id}',
