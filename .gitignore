@@ -45,3 +45,6 @@ logs/
 
 # Debug
 debug_page.html
+debug_*.html
+page_source*.html
+selenium*.html
