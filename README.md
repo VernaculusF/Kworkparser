@@ -1,24 +1,24 @@
 # Kwork Parser
 
-Django-приложение для получения заказов с Kwork через Selenium. Результаты доступны в веб-интерфейсе с фильтрацией и учётом откликов.
+A Django application that retrieves Kwork projects with Selenium. Parsed projects are available through a web interface with filtering and response tracking.
 
-## Возможности
+## Features
 
-- парсинг заказов по категориям Kwork;
-- фильтрация и поиск сохранённых заказов;
-- учёт отправленных откликов и их статусов;
-- запуск парсинга из веб-интерфейса или management-команды;
-- управление данными через Django Admin.
+- Parse projects by Kwork category.
+- Filter and search stored projects.
+- Track submitted responses and their statuses.
+- Start parsing from the web interface or a management command.
+- Manage data through Django Admin.
 
-## Стек
+## Stack
 
 - Python 3.10+
 - Django 5
-- Selenium и Beautiful Soup
+- Selenium and Beautiful Soup
 - PostgreSQL
 - Docker Compose
 
-## Быстрый старт
+## Quick start
 
 ```bash
 docker compose up --build -d
@@ -26,36 +26,35 @@ docker compose exec web python manage.py migrate
 docker compose exec web python manage.py load_categories
 ```
 
-Веб-интерфейс будет доступен по адресу `http://localhost:8000/`.
+The web interface is available at `http://localhost:8000/`.
 
-Запуск парсинга из контейнера:
+Run the parser from the container:
 
 ```bash
 docker compose exec web python manage.py parse_kwork --category 11
 docker compose exec web python manage.py parse_kwork --all
 ```
 
-Параметры Django и парсера задаются переменными `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `PARSER_DELAY`, `PARSER_TIMEOUT` и `PARSER_MAX_PAGES`. Значения для локального запуска определены в `docker-compose.yml`.
+Django and parser settings use the `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `PARSER_DELAY`, `PARSER_TIMEOUT`, and `PARSER_MAX_PAGES` environment variables. Local defaults are defined in `docker-compose.yml`.
 
-Парсинг необходимо использовать с учётом условий использования Kwork и применимого законодательства.
+Use the parser in compliance with the Kwork terms of service and applicable law.
 
-## Структура проекта
+## Project structure
 
 ```text
 .
 ├── apps/
-│   ├── parser/       # Selenium-парсер и management-команда
-│   ├── projects/     # заказы, категории и представления
-│   └── responses/    # учёт откликов
-├── kwork_parser/     # настройки и маршрутизация Django
-├── templates/        # HTML-шаблоны
-├── static/           # CSS и JavaScript
-├── docs/             # дополнительная документация
+│   ├── parser/       # Selenium parser and management command
+│   ├── projects/     # Projects, categories, and views
+│   └── responses/    # Response tracking
+├── kwork_parser/     # Django settings and routing
+├── templates/        # HTML templates
+├── static/           # CSS and JavaScript
 ├── Dockerfile
 ├── docker-compose.yml
 └── manage.py
 ```
 
-## Лицензия
+## License
 
 MIT
